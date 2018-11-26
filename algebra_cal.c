@@ -250,7 +250,37 @@ bool is_seperated_expression() {
 	return true;
 }
 
-char* parse_expression(char *p_str) {
+bool is_have_divisor(char *p_str) {
+	DBG_PRINTF("%s:%d: is_have_divisor: p_str(%s) len of p_str(%d)\n",
+			__FILE__, __LINE__, p_str, (int)strlen(p_str)+1);
+	if (NULL == strchr(p_str, '/')) {
+		DBG_PRINTF("%s:%d: is_have_divisor: p_str(%s) len of p_str(%d)\n",
+			__FILE__, __LINE__, p_str, (int)strlen(p_str)+1);
+		return false;
+	} else {
+		DBG_PRINTF("%s:%d: is_have_divisor: p_str(%s) len of p_str(%d)\n",
+			__FILE__, __LINE__, p_str, (int)strlen(p_str)+1);
+		return true;
+	}
+}
+
+void before_divisor(char *dst_str, char *src_str) {
+	unsigned int tmp;
+	tmp = (unsigned int)(strchr(src_str, '/') - src_str);
+	strncpy(dst_str, src_str, tmp);
+	DBG_PRINTF("%s:%d: before_divisor: dst_str(%s) src_str(%s)\n",
+			__FILE__, __LINE__, dst_str, src_str);
+}
+
+void after_divisor(char *dst_str, char *src_str) {
+	char *str_temp = strchr(src_str, '/');
+	str_temp++; //不包含‘/’，所以指针向后移一位
+	strcpy(dst_str, str_temp);
+	DBG_PRINTF("%s:%d: after_divisor: dst_str(%s) src_str(%s)\n",
+			__FILE__, __LINE__, dst_str, src_str);
+}
+
+void to_seperated_expression(char *p_str) {
 	char get_ch, top_ops_ch;
 	int num_len = 0; //连续输入数字的个数
 	char num_buff[NUM_LEN];
@@ -265,15 +295,15 @@ char* parse_expression(char *p_str) {
 	if (p_str != NULL) {
 		get_ch = *p_str;
 	} else {
-		DBG_PRINTF("%s:%d: parse_expression: Wrong expression!\n", \
+		DBG_PRINTF("%s:%d: to_seperated_expression: Wrong expression!\n", \
 				__FILE__, __LINE__);
 	}
 	top_ops_ch = show_ops_top();
-	DBG_PRINTF("%s:%d: parse_expression: get_ch(%c) top_ops_ch(%c)\n", \
+	DBG_PRINTF("%s:%d: to_seperated_expression: get_ch(%c) top_ops_ch(%c)\n", \
 			__FILE__, __LINE__, get_ch, top_ops_ch);
 		
 	while (get_ch != END || top_ops_ch != END) {
-		DBG_PRINTF("%s:%d: parse_expression: get_ch(%c) cal_flag(%d), num_len(%d)\n", \
+		DBG_PRINTF("%s:%d: to_seperated_expression: get_ch(%c) cal_flag(%d), num_len(%d)\n", \
 				__FILE__, __LINE__, get_ch, cal_flag, num_len);
 		if (is_operator(get_ch)) {
 			if (cal_flag) { //如果刚刚有出栈运算的过程，那么上一次取出的字符
@@ -282,10 +312,10 @@ char* parse_expression(char *p_str) {
 			}
 			if (num_len) {
 				push_exps(num_buff);
-				DBG_PRINTF("%s:%d: parse_expression: top exps(%s)\n", \
+				DBG_PRINTF("%s:%d: to_seperated_expression: top exps(%s)\n", \
 						__FILE__, __LINE__, show_exps_top());
 			}
-			DBG_PRINTF("%s:%d: parse_expression:get_ch(%c)\n", \
+			DBG_PRINTF("%s:%d: to_seperated_expression:get_ch(%c)\n", \
 				__FILE__, __LINE__, get_ch);
 			memset(num_buff, 0, num_len);
 			num_len = 0;
@@ -297,7 +327,7 @@ char* parse_expression(char *p_str) {
 					if (*(++p_str) != '\0') {
 						last_ch = get_ch;
 						get_ch = *p_str;
-						DBG_PRINTF("%s:%d: parse_expression: get_ch(%c)\n", \
+						DBG_PRINTF("%s:%d: to_seperated_expression: get_ch(%c)\n", \
 								__FILE__, __LINE__, get_ch);
 					}
 					break;
@@ -327,7 +357,7 @@ char* parse_expression(char *p_str) {
 						last_ch = '0'; //上面的步骤将上一次的操作符丢弃了，所以
 									   //这里默认给赋值一个非操作符即可
 						get_ch = *p_str;
-						DBG_PRINTF("%s:%d: parse_expression: get_ch(%c)\n",
+						DBG_PRINTF("%s:%d: to_seperated_expression: get_ch(%c)\n",
 								__FILE__, __LINE__, get_ch);
 					}
 					break;
@@ -341,7 +371,7 @@ char* parse_expression(char *p_str) {
 					strcpy(expre2, pop_exps());
 					strcpy(expre1, pop_exps());
 					push_exps(calculate(expre1, expre_op, expre2));
-					DBG_PRINTF("%s:%d: parse_expression: show_exps_top(%s)\n",
+					DBG_PRINTF("%s:%d: to_seperated_expression: show_exps_top(%s)\n",
 							__FILE__, __LINE__, show_exps_top());
 					break;
 				
@@ -351,7 +381,7 @@ char* parse_expression(char *p_str) {
 			if (is_seperated_expression()) {
 				memset(expre1, 0, MAX_EXPRE);
 				strcpy(expre1,pop_exps());
-				DBG_PRINTF("%s:%d: parse_expression: expre1(%s) len of expre1(%d)\n",
+				DBG_PRINTF("%s:%d: to_seperated_expression: expre1(%s) len of expre1(%d)\n",
 							__FILE__, __LINE__, expre1, (int)strlen(expre1)+1);
 				separated_expre[0][sep_expre_num] = malloc(strlen(expre1)+1);
 				memset(separated_expre[0][sep_expre_num], 0, strlen(expre1)+1);
@@ -359,7 +389,7 @@ char* parse_expression(char *p_str) {
 				
 				expre_op[0] = pop_ops();
 				expre_op[1] = '\0';
-				DBG_PRINTF("%s:%d: parse_expression: expre_op(%s) len of expre_op(%d)\n",
+				DBG_PRINTF("%s:%d: to_seperated_expression: expre_op(%s) len of expre_op(%d)\n",
 							__FILE__, __LINE__, expre_op, (int)strlen(expre_op)+1);
 				separated_op[sep_op_num] = malloc(strlen(expre_op)+1);
 				memset(separated_op[sep_op_num], 0, strlen(expre_op)+1);
@@ -373,7 +403,7 @@ char* parse_expression(char *p_str) {
 				last_ch = '0';
 			}
 			if (last_ch == ')') { //上一次输入为')',则本次输入不能为数字
-				DBG_PRINTF("%s:%d: parse_expression: Wrong expression\n",
+				DBG_PRINTF("%s:%d: to_seperated_expression: Wrong expression\n",
 						__FILE__, __LINE__);
 				exit(-1);
 			}
@@ -383,7 +413,7 @@ char* parse_expression(char *p_str) {
 			if (*(++p_str) != '\0') {
 				last_ch = get_ch;
 				get_ch = *p_str;
-				DBG_PRINTF("%s:%d: parse_expression: get_ch(%c)\n",
+				DBG_PRINTF("%s:%d: to_seperated_expression: get_ch(%c)\n",
 						__FILE__, __LINE__, get_ch);
 			}
 		} else if (is_algebra(get_ch)) {
@@ -391,7 +421,7 @@ char* parse_expression(char *p_str) {
 				last_ch = '0';
 			}
 			if (last_ch == ')') { //上一次输入为')',则本次输入不能为代数
-				DBG_PRINTF("%s:%d: parse_expression: Wrong expression\n",
+				DBG_PRINTF("%s:%d: to_seperated_expression: Wrong expression\n",
 						__FILE__, __LINE__);
 				exit(-1);
 			}
@@ -401,11 +431,11 @@ char* parse_expression(char *p_str) {
 			if (*(++p_str) != '\0') {
 				last_ch = get_ch;
 				get_ch = *p_str;
-				DBG_PRINTF("%s:%d: parse_expression: get_ch(%c)\n",
+				DBG_PRINTF("%s:%d: to_seperated_expression: get_ch(%c)\n",
 						__FILE__, __LINE__, get_ch);
 			}
 		} else {
-			DBG_PRINTF("%s:%d: parse_expression: Wrong expression\n",
+			DBG_PRINTF("%s:%d: to_seperated_expression: Wrong expression\n",
 					__FILE__, __LINE__);
 			exit(-1);
 		}
@@ -413,12 +443,64 @@ char* parse_expression(char *p_str) {
 	}
 	memset(expre1, 0, MAX_EXPRE);
 	strcpy(expre1,pop_exps());
-	DBG_PRINTF("%s:%d: parse_expression: expre1(%s) len of expre1(%d)\n",
+	DBG_PRINTF("%s:%d: to_seperated_expression: expre1(%s) len of expre1(%d)\n",
 				__FILE__, __LINE__, expre1, (int)strlen(expre1)+1);
 	separated_expre[0][sep_expre_num] = malloc(strlen(expre1)+1);
 	memset(separated_expre[0][sep_expre_num], 0, strlen(expre1)+1);
 	strcpy(separated_expre[0][sep_expre_num], expre1);
 	sep_expre_num++;
-	//return (show_exps_top());
-	return NULL;
+}
+
+void parse_expression(char *p_str) {
+	int i; //循环计数用
+	char temp_expre[MAX_EXPRE];
+	to_seperated_expression(p_str);
+	for (i=0; i < sep_expre_num; i++) {
+		strcpy(temp_expre, separated_expre[0][i]);
+		DBG_PRINTF("%s:%d: parse_expression: temp_expre(%s) len of temp_expre(%d)\n",
+				__FILE__, __LINE__, temp_expre, (int)strlen(temp_expre)+1);
+		if (is_have_divisor(temp_expre)) {
+			DBG_PRINTF("%s:%d: parse_expression: separated[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			memset(separated_expre[0][i], 0, strlen(separated_expre[0][i])+1);
+			DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			separated_expre[1][i] = malloc(strlen(temp_expre));
+			DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			memset(separated_expre[1][i], 0, strlen(temp_expre));
+			DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			before_divisor(separated_expre[0][i], temp_expre);
+			DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			after_divisor(separated_expre[1][i], temp_expre);
+			DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+		} else {
+			DBG_PRINTF("%s:%d: parse_expression:  separated_op[0](%s) len of separated_op[0](%d)\n",
+					__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			separated_expre[1][i] = malloc(2);
+			DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			memset(separated_expre[1][i], 0, 2);
+			DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			strcpy(separated_expre[1][i], "1");
+		}
+
+		strcpy(temp_expre, separated_expre[1][i]);
+		DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+		while (is_have_divisor(temp_expre)) {
+			DBG_PRINTF("%s:%d: parse_expression: separated_op[0](%s) len of separated_op[0](%d)\n",
+				__FILE__, __LINE__, separated_op[0], (int)strlen(separated_op[0])+1);
+			memset(temp_separated_expre, 0, MAX_EXPRE);
+			memset(separated_expre[1][i], 0, strlen(separated_expre[1][i])+1);
+			before_divisor(temp_separated_expre, temp_expre);
+			after_divisor(separated_expre[1][i], temp_expre);
+			calculate(separated_expre[1][i], "*", temp_separated_expre);
+			strcpy(temp_expre, separated_expre[1][i]);
+		}
+	}
 }

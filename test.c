@@ -20,7 +20,11 @@ int main(int argc, char *argv[]) {
 	parse_expression(p_str);
 	printf("\n");
 	for (i=0; i<sep_expre_num; i++) {
+		printf("(");
 		printf("%s", separated_expre[0][i]);
+		printf(")/(");
+		printf("%s", separated_expre[1][i]);
+		printf(")");
 		if (i != sep_op_num) {
 			printf("\n%s\n", separated_op[i]);
 		}
