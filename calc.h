@@ -18,7 +18,6 @@
 #define MAX_STACK 100
 #define NUM_LEN 32
 #define MAX_EXPRE 200
-#define LEN_OP_STR 2
 #define END '\n'
 
 typedef int bool;
