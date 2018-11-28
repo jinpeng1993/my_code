@@ -107,6 +107,11 @@ void before_divisor(char *dst_str, char *src_str);
 void after_divisor(char *dst_str, char *src_str);
 
 /**
+*找到分母的最小公倍数--通分
+*/
+void abstract_denominator();
+
+/**
 *解析表达式
 */
 void parse_expression(char *p_str);

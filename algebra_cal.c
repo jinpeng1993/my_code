@@ -383,8 +383,8 @@ void to_seperated_expression(char *p_str) {
 				strcpy(expre1,pop_exps());
 				DBG_PRINTF("%s:%d: to_seperated_expression: expre1(%s) len of expre1(%d)\n",
 							__FILE__, __LINE__, expre1, (int)strlen(expre1)+1);
-				separated_expre[0][sep_expre_num] = malloc(strlen(expre1)+1);
-				memset(separated_expre[0][sep_expre_num], 0, strlen(expre1)+1);
+				separated_expre[0][sep_expre_num] = malloc(MAX_EXPRE);
+				memset(separated_expre[0][sep_expre_num], 0, MAX_EXPRE);
 				strcpy(separated_expre[0][sep_expre_num], expre1);
 				
 				expre_op[0] = pop_ops();
@@ -449,53 +449,63 @@ void to_seperated_expression(char *p_str) {
 	strcpy(expre1,pop_exps());
 	DBG_PRINTF("%s:%d: to_seperated_expression: expre1(%s) len of expre1(%d)\n",
 				__FILE__, __LINE__, expre1, (int)strlen(expre1)+1);
-	separated_expre[0][sep_expre_num] = malloc(strlen(expre1)+1);
-	memset(separated_expre[0][sep_expre_num], 0, strlen(expre1)+1);
+	separated_expre[0][sep_expre_num] = malloc(MAX_EXPRE);
+	memset(separated_expre[0][sep_expre_num], 0, MAX_EXPRE);
 	strcpy(separated_expre[0][sep_expre_num], expre1);
 	sep_expre_num++;
 }
 
-void parse_expression(char *p_str) {
+void abstract_denominator() {
 	int i; //循环计数用
 	int i_sub; //子循环计数用
 	char temp_expre[MAX_EXPRE];
 	char *temp_str = NULL;
-	to_seperated_expression(p_str);
+	char *temp_str_last = NULL;
+
 	for (i=0; i < sep_expre_num; i++) {
 		memset(temp_expre, 0, MAX_EXPRE);
 		strcpy(temp_expre, separated_expre[0][i]);
-		DBG_PRINTF("%s:%d: parse_expression: temp_expre(%s) len of temp_expre(%d)\n",
+		DBG_PRINTF("%s:%d: abstract_denominator: temp_expre(%s) len of temp_expre(%d)\n",
 				__FILE__, __LINE__, temp_expre, (int)strlen(temp_expre)+1);
 		if (is_have_divisor(temp_expre)) {
 			/*除号之前的作为分子，除号之后的进一步判断*/
-			memset(separated_expre[0][i], 0, strlen(separated_expre[0][i])+1);
-			separated_expre[1][i] = malloc(strlen(temp_expre));
-			memset(separated_expre[1][i], 0, strlen(temp_expre));
+			memset(separated_expre[0][i], 0, MAX_EXPRE);
+			separated_expre[1][i] = malloc(MAX_EXPRE);
+			memset(separated_expre[1][i], 0, MAX_EXPRE);
 			before_divisor(separated_expre[0][i], temp_expre);
 			after_divisor(separated_expre[1][i], temp_expre);
 
 			// memset(temp_expre, 0, MAX_EXPRE);
 			// strcpy(temp_expre, separated_expre[1][i]);
 			temp_str = separated_expre[1][i];
-			DBG_PRINTF("%s:%d: parse_expression: temp_str(%s)\n",
+			DBG_PRINTF("%s:%d: abstract_denominator: temp_str(%s)\n",
 					__FILE__, __LINE__, temp_str);
 			while (*temp_str != '\0') {
-				DBG_PRINTF("%s:%d: parse_expression: *temp_str(%c)\n",
+				DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
 						__FILE__, __LINE__, *temp_str);
-				if (*temp_str == '(') {
+				if (is_constant(*temp_str)) {
 					do {
 						temp_str++;
-						DBG_PRINTF("%s:%d: parse_expression: *temp_str(%c)\n",
+						DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
+							__FILE__, __LINE__, *temp_str);
+					} while (is_constant(*temp_str)); 	
+					temp_str++;
+					DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
+							__FILE__, __LINE__, *temp_str);
+				} else if (*temp_str == '(') {
+					do {
+						temp_str++;
+						DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
 								__FILE__, __LINE__, *temp_str);
 					} while (*temp_str != ')');
 					temp_str++;
-					DBG_PRINTF("%s:%d: parse_expression: *temp_str(%c)\n",
+					DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
 							__FILE__, __LINE__, *temp_str);
 				} else if (*temp_str == '/') {
 					/*如果当前字符是除号，转换为乘号*/
 					memset(temp_str, '*', 1);
 					temp_str++;
-					DBG_PRINTF("%s:%d: parse_expression: *temp_str(%c)\n",
+					DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
 							__FILE__, __LINE__, *temp_str);
 				} else if (*temp_str == '*') {
 					/*如果当前字符是乘号，把乘号以及紧跟着的表达式移到分子部分，
@@ -504,12 +514,22 @@ void parse_expression(char *p_str) {
 					memset(temp_expre, 0, MAX_EXPRE);
 					temp_expre[i_sub] = *temp_str;
 					i_sub++;
-					temp_expre[i_sub] = '\0';+
+					temp_expre[i_sub] = '\0';
 					memset(temp_str, 0, 1);
+					temp_str_last = temp_str; // 保存当前的位置
+
 					temp_str++;
-					DBG_PRINTF("%s:%d: parse_expression: *temp_str(%c)\n",
+					DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
 							__FILE__, __LINE__, *temp_str);
-					if (*temp_str == '(') {
+					if (is_constant(*(temp_str+1))) {
+						do {
+							temp_expre[i_sub] = *temp_str;
+							i_sub++;
+							temp_expre[i_sub] = '\0';
+							memset(temp_str, 0, 1);
+							temp_str++;
+						} while (is_constant(*(temp_str+1))); 	
+					} else if (*temp_str == '(') {
 						do {
 							temp_expre[i_sub] = *temp_str;
 							i_sub++;
@@ -523,22 +543,136 @@ void parse_expression(char *p_str) {
 					temp_expre[i_sub] = '\0';
 					memset(temp_str, 0, 1);
 					temp_str++;
-					DBG_PRINTF("%s:%d: parse_expression: *temp_str(%c)\n",
+					DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
 							__FILE__, __LINE__, *temp_str);
-					DBG_PRINTF("%s:%d: parse_expression: temp_expre(%s)\n",
+					DBG_PRINTF("%s:%d: abstract_denominator: temp_str(%s)\n",
+							__FILE__, __LINE__, temp_str);
+					DBG_PRINTF("%s:%d: abstract_denominator: temp_expre(%s)\n",
 							__FILE__, __LINE__, temp_expre);
 					strcat(separated_expre[0][i], temp_expre);
-					strcat(separated_expre[1][i], temp_str);
+					strcat(separated_expre[1][i], temp_str);  //拼接字符串以后，temp_str指向的位置会被改变
+					temp_str = temp_str_last;				  //所以使用之前保存的位置充值temp_str
+				} else {
+					temp_str++;
+					DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
+							__FILE__, __LINE__, *temp_str);
 				}
-				DBG_PRINTF("%s:%d: parse_expression: *temp_str(%c)\n",
+				DBG_PRINTF("%s:%d: abstract_denominator: *temp_str(%c)\n",
 							__FILE__, __LINE__, *temp_str);
 			}
 
 		} else {
 			/*如果没有除号，分母默认为1*/
-			separated_expre[1][i] = malloc(2);
-			memset(separated_expre[1][i], 0, 2);
+			separated_expre[1][i] = malloc(MAX_EXPRE);
+			memset(separated_expre[1][i], 0, MAX_EXPRE);
 			strcpy(separated_expre[1][i], "1");
 		}
 	}
+}
+
+void total_denominator(char *deno, char *str) {
+	char *ptr_deno = deno;
+	char *ptr_str = str;
+	char deno_element[MAX_EXPRE];
+	char str_element[MAX_EXPRE];
+	char denominator_temp[MAX_EXPRE];
+	int i_deno, i_str;
+	memset(deno_element, 0, MAX_EXPRE);
+	memset(str_element, 0, MAX_EXPRE);
+	memset(denominator_temp, 0, MAX_EXPRE);
+	strcpy(denominator_temp, deno);
+	while (*ptr_str != '\0') {
+		i_str = 0;
+		if (is_constant(*ptr_str)) {
+			while (is_constant(*ptr_str)) {
+				str_element[i_str] = *ptr_str;
+				i_str++;
+				str_element[i_str] = '\0';
+				ptr_str++;
+			}
+		} else if(*ptr_str == '(') {
+			while (*ptr_str != ')') {
+				str_element[i_str] = *ptr_str;
+				i_str++;
+				str_element[i_str] = '\0';
+				ptr_str++;
+			}
+			str_element[i_str] = *ptr_str;
+			i_str++;
+			str_element[i_str] = '\0';
+			ptr_str++;
+		} else {
+			str_element[i_str] = *ptr_str;
+			i_str++;
+			str_element[i_str] = '\0';
+			ptr_str++;
+		}
+			
+		ptr_deno = deno;
+		while (*ptr_deno != '\0') {
+			i_deno = 0;
+			if (is_constant(*ptr_deno)) {
+				while (is_constant(*ptr_deno)) {
+					deno_element[i_deno] = *ptr_deno;
+					i_deno++;
+					deno_element[i_deno] = '\0';
+					ptr_deno++;
+				}
+			} else if(*ptr_deno == '(') {
+				while (*ptr_deno != ')') {
+					deno_element[i_deno] = *ptr_deno;
+					i_deno++;
+					deno_element[i_deno] = '\0';
+					ptr_deno++;
+				}
+				deno_element[i_deno] = *ptr_deno;
+				i_deno++;
+				deno_element[i_deno] = '\0';
+				ptr_deno++;
+			} else {
+				deno_element[i_deno] = *ptr_deno;
+				i_deno++;
+				deno_element[i_deno] = '\0';
+				ptr_deno++;
+			}
+				
+			DBG_PRINTF("%s:%d: total_denominator: deno_element(%s) str_element(%s)\n",
+					__FILE__, __LINE__, deno_element, str_element);
+			if (!strcmp(deno_element, str_element)) {
+				break;
+			}
+		}
+		if (strcmp(deno_element, str_element)) {
+			DBG_PRINTF("%s:%d: total_denominator: deno_element(%s) str_element(%s)\n",
+					__FILE__, __LINE__, deno_element, str_element);
+			strcat(denominator_temp, "*");
+			strcat(denominator_temp, str_element);
+			DBG_PRINTF("%s:%d: total_denominator: *denominator_temp(%s)\n",
+					__FILE__, __LINE__, denominator_temp);
+		}
+	}
+	strcpy(deno, denominator_temp);
+}
+
+void parse_expression(char *p_str) {
+	int i = 0;
+	char denominator[MAX_EXPRE];
+	to_seperated_expression(p_str);
+	abstract_denominator();
+	memset(denominator, 0, MAX_EXPRE);
+	while (*separated_expre[1][i] == '1' && strlen(separated_expre[1][i]) == 1) {
+		i++;
+	}
+	strcpy(denominator,separated_expre[1][i]);
+	i++;
+	for (; i<sep_expre_num; i++) {
+		DBG_PRINTF("%s:%d: parse_expression: denominator(%s) separated_expre[1][%d](%s)\n",
+					__FILE__, __LINE__, denominator, i, separated_expre[1][i]);
+		if (*separated_expre[1][i] == '1' && strlen(separated_expre[1][i]) == 1) {
+			continue;
+		} else {
+			total_denominator(denominator, separated_expre[1][i]);
+		}
+	}
+	DBG_PRINTF("\ndenominator %s\n", denominator);
 }
