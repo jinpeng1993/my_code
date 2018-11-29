@@ -18,6 +18,14 @@ int main(int argc, char *argv[]) {
 	printf("\n\n");
 	
 	parse_expression(p_str);
+	printf("\n\n");
+	for (i=0; i<sep_expre_num; i++) {
+		printf("%s", separated_expre[0][i]);
+		if (i != sep_op_num) {
+			printf("%s", separated_op[i]);
+		}
+	}
+	printf("\n");
 	printf("\n");
 	for (i=0; i<sep_expre_num; i++) {
 		printf("%s", separated_expre[0][i]);

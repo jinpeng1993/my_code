@@ -654,9 +654,103 @@ void total_denominator(char *deno, char *str) {
 	strcpy(deno, denominator_temp);
 }
 
+void sub_denominator(char *deno_for_element, char *self_deno) {
+	char *ptr_deno_for_element = deno_for_element;
+	char *ptr_self_deno = self_deno;
+	char *temp_deno_for_element = NULL;
+	int i_deno_for_element;
+	int i_self_deno;
+
+	char part_of_deno_for_element[MAX_EXPRE];
+	char part_of_self_deno[MAX_EXPRE];
+	memset(part_of_deno_for_element, 0, MAX_EXPRE);
+	memset(part_of_self_deno, 0, MAX_EXPRE);
+
+	while (*ptr_self_deno != '\0') {
+		i_self_deno = 0;
+		if (is_constant(*ptr_self_deno)) {
+			while (is_constant(*ptr_self_deno)) {
+				part_of_self_deno[i_self_deno] = *ptr_self_deno;
+				i_self_deno++;
+				part_of_self_deno[i_self_deno] = '\0';
+				ptr_self_deno++;
+			}
+		} else if(*ptr_self_deno == '(') {
+			while (*ptr_self_deno != ')') {
+				part_of_self_deno[i_self_deno] = *ptr_self_deno;
+				i_self_deno++;
+				part_of_self_deno[i_self_deno] = '\0';
+				ptr_self_deno++;
+			}
+			part_of_self_deno[i_self_deno] = *ptr_self_deno;
+			i_self_deno++;
+			part_of_self_deno[i_self_deno] = '\0';
+			ptr_self_deno++;
+		} else {
+			part_of_self_deno[i_self_deno] = *ptr_self_deno;
+			i_self_deno++;
+			part_of_self_deno[i_self_deno] = '\0';
+			ptr_self_deno++;
+		}
+			
+		ptr_deno_for_element = deno_for_element;
+		while (*ptr_deno_for_element != '\0') {
+			i_deno_for_element = 0;
+			if (is_constant(*ptr_deno_for_element)) {
+				while (is_constant(*ptr_deno_for_element)) {
+					part_of_deno_for_element[i_deno_for_element] = *ptr_deno_for_element;
+					i_deno_for_element++;
+					part_of_deno_for_element[i_deno_for_element] = '\0';
+					ptr_deno_for_element++;
+				}
+			} else if(*ptr_deno_for_element == '(') {
+				while (*ptr_deno_for_element != ')') {
+					part_of_deno_for_element[i_deno_for_element] = *ptr_deno_for_element;
+					i_deno_for_element++;
+					part_of_deno_for_element[i_deno_for_element] = '\0';
+					ptr_deno_for_element++;
+				}
+				part_of_deno_for_element[i_deno_for_element] = *ptr_deno_for_element;
+				i_deno_for_element++;
+				part_of_deno_for_element[i_deno_for_element] = '\0';
+				ptr_deno_for_element++;
+			} else {
+				part_of_deno_for_element[i_deno_for_element] = *ptr_deno_for_element;
+				i_deno_for_element++;
+				part_of_deno_for_element[i_deno_for_element] = '\0';
+				ptr_deno_for_element++;
+			}
+				
+			DBG_PRINTF("%s:%d: deno_for_elementminator: part_of_deno_for_element(%s) part_of_self_deno(%s)\n",
+					__FILE__, __LINE__, part_of_deno_for_element, part_of_self_deno);
+			if (!strcmp(part_of_deno_for_element, part_of_self_deno)) {
+				temp_deno_for_element = ptr_deno_for_element;
+				while (i_deno_for_element > 0) {
+					temp_deno_for_element--;
+					i_deno_for_element--;
+				}
+				if (!strcmp(temp_deno_for_element, deno_for_element)) {
+					ptr_deno_for_element++;
+					strcpy(deno_for_element,ptr_deno_for_element);
+				} else {
+					if (*(temp_deno_for_element-1) == '*') {
+						temp_deno_for_element--;
+					} else if (*(temp_deno_for_element-1) == '*') {
+						temp_deno_for_element--;
+					}
+					memset(temp_deno_for_element, 0, 1);
+					strcat(deno_for_element, ptr_deno_for_element);
+				}
+				break;
+			}
+		}
+	}
+}
+
 void parse_expression(char *p_str) {
 	int i = 0;
 	char denominator[MAX_EXPRE];
+	char denominator_for_element[MAX_EXPRE]; // 每个独立的表达式的分子，需要乘以这个字符串来通分 
 	to_seperated_expression(p_str);
 	abstract_denominator();
 	memset(denominator, 0, MAX_EXPRE);
@@ -675,4 +769,30 @@ void parse_expression(char *p_str) {
 		}
 	}
 	DBG_PRINTF("\ndenominator %s\n", denominator);
+
+	for (i=0; i<sep_expre_num; i++) {
+		DBG_PRINTF("%s:%d: parse_expression: separated_expre[0][%d](%s) separated_expre[1][%d](%s)\n",
+					__FILE__, __LINE__, i, separated_expre[0][i], i, separated_expre[1][i]);
+		if (*separated_expre[1][i] == '1' && strlen(separated_expre[1][i]) == 1) {
+			DBG_PRINTF("%s:%d: parse_expression: separated_expre[0][%d](%s) separated_expre[1][%d](%s)\n",
+					__FILE__, __LINE__, i, separated_expre[0][i], i, separated_expre[1][i]);
+			memset(separated_expre[1][i], 0, MAX_EXPRE);
+			strcpy(separated_expre[1][i], denominator);
+
+			strcat(separated_expre[0][i], "*");
+			strcat(separated_expre[0][i], denominator);
+		} else {
+			memset(denominator_for_element, 0, MAX_EXPRE);
+			strcpy(denominator_for_element, denominator);
+			sub_denominator(denominator_for_element, separated_expre[1][i]);
+			printf("\n%s:%d: parse_expression: denominator_for_element(%s) denominator(%s) separated_expre[1][%d](%s)\n",
+					__FILE__, __LINE__, denominator_for_element, denominator, i, separated_expre[1][i]);
+
+			memset(separated_expre[1][i], 0, MAX_EXPRE);
+			strcpy(separated_expre[1][i], denominator);
+
+			strcat(separated_expre[0][i], "*");
+			strcat(separated_expre[0][i], denominator_for_element);
+		}
+	}
 }
